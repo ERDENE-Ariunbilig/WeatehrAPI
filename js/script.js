@@ -1,5 +1,5 @@
 // API configuration
-const API_KEY = '9f01bcccc7b8d117f0a6a774274b9a14'; // Replace with your OpenWeatherMap API key
+const API_KEY = '9f01bcccc7b8d117f0a6a774274b9a14';
 const BASE_URL = 'https://api.openweathermap.org/data/2.5';
 const API_ENDPOINTS = {
     weather: `${BASE_URL}/weather`,
@@ -288,9 +288,9 @@ async function updateBackgroundByWeather(weatherData) {
         } else if (hour >= 12 && hour < 18) {
             backgroundImage = timeBackgrounds.mongolia.day;
         } else if (hour >= 18 && hour < 22) {
-            backgroundImage = timeBackgrounds.mongolia.sunset;
-        } else {
             backgroundImage = timeBackgrounds.mongolia.night;
+        } else {
+            backgroundImage = timeBackgrounds.mongolia.sunset;
         }
         
         changeBackground(backgroundImage);
@@ -479,8 +479,8 @@ function applyTheme(isDark) {
 // Update initialization
 document.addEventListener('DOMContentLoaded', () => {
     initializeControls();
-    getUlaanbaatarWeather(); // Start with Ulaanbaatar weather
+    getUlaanbaatarWeather(); // Start Ulaanbaatar weather
     
-    // Update weather every 5 minutes
+    // Update 5 minutes
     setInterval(getUlaanbaatarWeather, 300000);
 });
