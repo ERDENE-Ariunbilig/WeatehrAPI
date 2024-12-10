@@ -609,3 +609,80 @@ body::before {
         background-size: cover;
     }
 }
+
+/* Language toggle styles */
+.language-toggle {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.language-toggle button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    background: var(--search-bg);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+}
+
+.language-toggle button.active {
+    background: var(--text-color);
+    color: var(--panel-bg);
+}
+
+.settings-item {
+    margin-bottom: 15px;
+}
+
+.settings-item:last-child {
+    margin-bottom: 0;
+}
+
+.language-text {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-color);
+}
+
+/* Language controls styles */
+.language-controls {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    gap: 8px;
+    z-index: 1000;
+}
+
+.lang-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    background: var(--panel-bg);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    backdrop-filter: blur(10px);
+}
+
+.lang-btn.active {
+    background: var(--text-color);
+    color: var(--panel-bg);
+}
+
+/* Adjust for mobile */
+@media screen and (max-width: 768px) {
+    .language-controls {
+        top: 10px;
+        left: 10px;
+    }
+    
+    .lang-btn {
+        padding: 6px 12px;
+        font-size: 14px;
+    }
+}

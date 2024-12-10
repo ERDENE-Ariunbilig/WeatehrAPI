@@ -6,20 +6,96 @@ const API_ENDPOINTS = {
     forecast: `${BASE_URL}/forecast`
 };
 
-// Time-based background handling for Mongolia
-const timeBackgrounds = {
-    // Mongolia-specific backgrounds
-    mongolia: {
-        sunrise: './img/ulaanbaatar/sunrise-mongolia.jpg',
-        day: './img/ulaanbaatar/day-mongolia.jpg',
-        sunset: './img/ulaanbaatar/sunset-mongolia.jpg',
-        night: './img/ulaanbaatar/night-mongolia.jpg',
-        rain: './img/ulaanbaatar/rain-mongolia.jpg'
+// Update translations object
+const translations = {
+    en: {
+        searchPlaceholder: "Search Location...",
+        forecast: "7-Day Forecast",
+        settings: "Settings",
+        celsius: "°C",
+        fahrenheit: "°F",
+        windSpeed: "M/s",
+        humidity: "Humidity",
+        months: {
+            Jan: 'Jan', Feb: 'Feb', Mar: 'Mar', Apr: 'Apr',
+            May: 'May', Jun: 'Jun', Jul: 'Jul', Aug: 'Aug',
+            Sep: 'Sep', Oct: 'Oct', Nov: 'Nov', Dec: 'Dec'
+        },
+        days: {
+            Mon: 'Mon', Tue: 'Tue', Wed: 'Wed', Thu: 'Thu',
+            Fri: 'Fri', Sat: 'Sat', Sun: 'Sun'
+        }
     },
-    // Default backgrounds for other locations
+    mn: {
+        searchPlaceholder: "Байршил хайх...",
+        forecast: "7 хоногийн урьдчилсан мэдээ",
+        settings: "Тохиргоо",
+        celsius: "°C",
+        fahrenheit: "°F",
+        windSpeed: "М/с",
+        humidity: "Чийгшил",
+        months: {
+            Jan: '1-р сар', Feb: '2-р сар', Mar: '3-р сар', Apr: '4-р сар',
+            May: '5-р сар', Jun: '6-р сар', Jul: '7-р сар', Aug: '8-р сар',
+            Sep: '9-р сар', Oct: '10-р сар', Nov: '11-р сар', Dec: '12-р сар'
+        },
+        days: {
+            Monday: 'Даваа',
+            Tuesday: 'Мягмар',
+            Wednesday: 'Лхагва',
+            Thursday: 'Пүрэв',
+            Friday: 'Баасан',
+            Saturday: 'Бямба',
+            Sunday: 'Ням'
+        }
+    }
+};
+
+// Update the background configuration with sunrise/sunset for default
+const backgroundConfig = {
+    // Default backgrounds (non-Mongolian locations)
     default: {
-        dark: './img/dark-default.jpg',  // Dark background for light mode
-        light: './img/light-default.jpg'  // Light background for dark mode
+        sunrise: './background/default/sunrise.jpg',
+        day: './background/default/day.jpg',
+        sunset: './background/default/sunset.jpg',
+        night: './background/default/night.jpg',
+        rain: './background/default/rain.jpg',
+        snow: './background/default/snow.jpg',
+        cloudy: './background/default/cloudy.jpg'
+    },
+    // Mongolian cities (except UB) with seasonal variations
+    mongolia: {
+        summer: {
+            sunrise: './background/mongolia/summer/sunrise.jpg',
+            day: './background/mongolia/summer/day.jpg',
+            sunset: './background/mongolia/summer/sunset.jpg',
+            night: './background/mongolia/summer/night.jpg',
+            rain: './background/mongolia/summer/rain.jpg'
+        },
+        winter: {
+            sunrise: './background/mongolia/winter/sunrise.jpg',
+            day: './background/mongolia/winter/day.jpg',
+            sunset: './background/mongolia/winter/sunset.jpg',
+            night: './background/mongolia/winter/night.jpg',
+            snow: './background/mongolia/winter/snow.jpg'
+        }
+    },
+    // Ulaanbaatar with seasonal variations
+    ulaanbaatar: {
+        summer: {
+            sunrise: './background/ulaanbaatar/summer/sunrise.jpg',
+            day: './background/ulaanbaatar/summer/day.jpg',
+            sunset: './background/ulaanbaatar/summer/sunset.jpg',
+            night: './background/ulaanbaatar/summer/night.jpg',
+            rain: './background/ulaanbaatar/summer/rain.jpg'
+        },
+        winter: {
+            sunrise: './background/ulaanbaatar/winter/sunrise.jpg',
+            day: './background/ulaanbaatar/winter/day.jpg',
+            sunset: './background/ulaanbaatar/winter/sunset.jpg',
+            night: './background/ulaanbaatar/winter/night.jpg',
+            snow: './background/ulaanbaatar/winter/snow.jpg'
+        }
     }
 };
 
@@ -37,8 +113,21 @@ const weatherIcons = {
 // State management
 const state = {
     isDarkMode: localStorage.getItem('isDarkMode') === 'true' || true,
-    isCelsius: localStorage.getItem('isCelsius') === 'true' || true
+    isCelsius: localStorage.getItem('isCelsius') === 'true' || true,
+    language: localStorage.getItem('language') || 'en'
 };
+
+// Function to get localized day name
+function getLocalizedDay(date) {
+    const englishDay = date.toLocaleDateString('en-US', { weekday: 'long' });
+    return translations[state.language].days[englishDay];
+}
+
+// Function to get localized month name
+function getLocalizedMonth(date) {
+    const englishMonth = date.toLocaleDateString('en-US', { month: 'short' });
+    return translations[state.language].months[englishMonth];
+}
 
 // Function to get weather icon based on weather ID and time
 function getWeatherIcon(weatherId, hour) {
@@ -159,15 +248,18 @@ async function handleLocationSearch() {
 // Function to update forecast with full week
 async function updateForecast(city) {
     try {
-        let response = await fetch(
+        console.log('Updating forecast for:', city); // Debug log
+        
+        const response = await fetch(
             `${API_ENDPOINTS.forecast}?q=${city}&appid=${API_KEY}&units=metric`
         );
         
         if (!response.ok) throw new Error('Forecast data not available');
         
         const data = await response.json();
+        console.log('Forecast data received:', data); // Debug log
         
-        // Process forecast data to get one forecast per day
+        // Process forecast data
         const dailyForecasts = {};
         
         data.list.forEach(forecast => {
@@ -181,19 +273,15 @@ async function updateForecast(city) {
         });
 
         const weekForecast = Object.values(dailyForecasts).slice(0, 7);
-
+        
+        // Generate forecast HTML
         const forecastHTML = weekForecast.map(forecast => {
             const date = new Date(forecast.dt * 1000);
-            const hour = date.getHours();
-            const day = date.toLocaleDateString('en-US', { weekday: 'long' });
-            const dateStr = date.toLocaleDateString('en-US', { 
-                day: 'numeric', 
-                month: 'short' 
-            });
+            const day = getLocalizedDay(date);
+            const month = getLocalizedMonth(date);
+            const dateNum = date.getDate();
             
-            // Get base temperature in Celsius from API
             const tempCelsius = Math.round(forecast.main.temp);
-            // Convert if needed
             const temp = state.isCelsius ? 
                 tempCelsius : 
                 Math.round((tempCelsius * 9/5) + 32);
@@ -202,27 +290,34 @@ async function updateForecast(city) {
                 <div class="forecast-day">
                     <div class="forecast-icon">
                         <span class="material-symbols-outlined">
-                            ${getWeatherIcon(forecast.weather[0].id, hour)}
+                            ${getWeatherIcon(forecast.weather[0].id, date.getHours())}
                         </span>
                     </div>
                     <div class="forecast-info">
                         <span class="day">${day}</span>
-                        <span class="date">${dateStr}</span>
+                        <span class="date">${dateNum} ${month}</span>
                     </div>
                     <div class="forecast-temp">${temp}°${state.isCelsius ? 'C' : 'F'}</div>
                 </div>
             `;
         }).join('');
 
-        document.querySelector('.forecast').innerHTML = `
-            <h3>7-Day Forecast</h3>
-            <div class="forecast-container">
-                ${forecastHTML}
-            </div>
-        `;
+        // Update the forecast container
+        const forecastElement = document.querySelector('.forecast');
+        if (forecastElement) {
+            forecastElement.innerHTML = `
+                <h3>${translations[state.language].forecast}</h3>
+                <div class="forecast-container">
+                    ${forecastHTML}
+                </div>
+            `;
+            console.log('Forecast HTML updated'); // Debug log
+        } else {
+            console.error('Forecast element not found'); // Debug log
+        }
 
     } catch (error) {
-        console.error('Error fetching forecast:', error);
+        console.error('Error updating forecast:', error);
     }
 }
 
@@ -239,18 +334,13 @@ function changeBackground(newImageUrl) {
 async function getUlaanbaatarWeather() {
     try {
         const response = await fetch(
-            `${API_ENDPOINTS.weather}?q=Ulaanbaatar,MN&appid=${API_KEY}&units=metric`
+            `${API_ENDPOINTS.weather}?q=Ulaanbaatar&appid=${API_KEY}&units=metric`
         );
-        
-        if (!response.ok) throw new Error('Could not fetch Ulaanbaatar weather');
-        
-        const weatherData = await response.json();
-        
-        // Update displays
-        await updateWeatherDisplay(weatherData);
-        await updateBackgroundByWeather(weatherData);
-        await updateForecast('Ulaanbaatar');
-        
+        if (response.ok) {
+            const weatherData = await response.json();
+            await updateWeatherDisplay(weatherData);
+            await updateForecast('Ulaanbaatar');
+        }
     } catch (error) {
         console.error('Error getting Ulaanbaatar weather:', error);
     }
@@ -264,68 +354,131 @@ function getMongoliaTime() {
     return new Date(utc + (3600000 * 8)); // UTC+8 for Mongolia
 }
 
-// Update the background by weather function
-async function updateBackgroundByWeather(weatherData) {
-    const isMongolia = weatherData.sys.country === 'MN';
-    const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
-    
-    if (isMongolia) {
-        // Use Mongolia-specific backgrounds
-        const mongoliaTime = getMongoliaTime();
-        const hour = mongoliaTime.getHours();
+// Function to determine season in Mongolia
+function getMongolianSeason() {
+    const date = getMongoliaTime();
+    const month = date.getMonth() + 1; // JavaScript months are 0-11
 
-        // Check if it's raining first
-        const weatherId = weatherData.weather[0].id;
-        if (weatherId >= 200 && weatherId < 700) {
-            changeBackground(timeBackgrounds.mongolia.rain);
-            return;
-        }
-
-        // If not raining, use time-based background
-        let backgroundImage;
-        if (hour >= 6 && hour < 12) {
-            backgroundImage = timeBackgrounds.mongolia.sunrise;
-        } else if (hour >= 12 && hour < 18) {
-            backgroundImage = timeBackgrounds.mongolia.day;
-        } else if (hour >= 18 && hour < 22) {
-            backgroundImage = timeBackgrounds.mongolia.night;
-        } else {
-            backgroundImage = timeBackgrounds.mongolia.sunset;
-        }
-        
-        changeBackground(backgroundImage);
+    // Summer: June to August (6-8)
+    // Winter: November to March (11-3)
+    // Transitional months (Spring/Autumn) default to the nearest major season
+    if (month >= 6 && month <= 8) {
+        return 'summer';
+    } else if (month >= 11 || month <= 3) {
+        return 'winter';
+    } else if (month >= 4 && month <= 5) {
+        return 'winter'; // Late spring defaults to winter
     } else {
-        // Use default backgrounds for other locations
-        changeBackground(isDarkMode ? 
-            timeBackgrounds.default.light : // Light background for dark mode
-            timeBackgrounds.default.dark    // Dark background for light mode
-        );
+        return 'winter'; // Early autumn defaults to winter
     }
 }
 
-// Update the weather display to use Mongolia time
+// Function to get local time for any location
+function getLocationTime(timezone) {
+    const now = new Date();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    return new Date(utc + (1000 * timezone)); // timezone offset in seconds from API
+}
+
+// Update the background selection function
+async function updateBackgroundByWeather(weatherData) {
+    const isUlaanbaatar = weatherData.name === 'Ulaanbaatar';
+    const isMongolia = weatherData.sys.country === 'MN';
+    
+    // Get appropriate time based on location
+    const locationTime = isMongolia ? 
+        getMongoliaTime() : 
+        getLocationTime(weatherData.timezone);
+    
+    const hour = locationTime.getHours();
+    
+    // Select the appropriate background set
+    let backgroundSet;
+    if (!isMongolia) {
+        backgroundSet = backgroundConfig.default;
+    } else {
+        const season = getMongolianSeason();
+        if (isUlaanbaatar) {
+            backgroundSet = backgroundConfig.ulaanbaatar[season];
+        } else {
+            backgroundSet = backgroundConfig.mongolia[season];
+        }
+    }
+
+    // Get weather conditions
+    const weatherId = weatherData.weather[0].id;
+
+    // Select background based on weather conditions first
+    let backgroundImage;
+
+    // Check weather conditions
+    if (weatherId >= 200 && weatherId < 600) { // Rain and thunderstorm
+        backgroundImage = backgroundSet.rain || backgroundSet.snow; // Use snow in winter if rain not available
+    } else if (weatherId >= 600 && weatherId < 700) { // Snow
+        backgroundImage = backgroundSet.snow || backgroundSet.rain; // Use rain in summer if snow not available
+    } else if (weatherId >= 801 && weatherId <= 804) { // Cloudy
+        if (!isMongolia) {
+            backgroundImage = backgroundSet.cloudy;
+        } else {
+            // For Mongolia, use time-based background instead of cloudy
+            if (hour >= 5 && hour < 7) {
+                backgroundImage = backgroundSet.sunrise;
+            } else if (hour >= 7 && hour < 17) {
+                backgroundImage = backgroundSet.day;
+            } else if (hour >= 17 && hour < 19) {
+                backgroundImage = backgroundSet.sunset;
+            } else {
+                backgroundImage = backgroundSet.night;
+            }
+        }
+    } else {
+        // If weather is clear, use time-based background
+        if (hour >= 5 && hour < 7) {
+            backgroundImage = backgroundSet.sunrise;
+        } else if (hour >= 7 && hour < 17) {
+            backgroundImage = backgroundSet.day;
+        } else if (hour >= 17 && hour < 19) {
+            backgroundImage = backgroundSet.sunset;
+        } else {
+            backgroundImage = backgroundSet.night;
+        }
+    }
+
+    // Change background with transition
+    changeBackground(backgroundImage);
+}
+
+// Add this function to format the date and time
+function formatDateTime(date, language) {
+    const hours = date.getHours();
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const hour12 = hours % 12 || 12;
+    
+    const day = translations[language].days[date.toLocaleDateString('en-US', { weekday: 'short' })];
+    const month = translations[language].months[date.toLocaleDateString('en-US', { month: 'short' })];
+    const dateNum = date.getDate();
+    const year = date.getFullYear().toString().slice(-2);
+
+    if (language === 'mn') {
+        return `${hour12}:${minutes} ${ampm} - ${day}, ${month} ${dateNum}, '${year}`;
+    } else {
+        return `${hour12}:${minutes} ${ampm} - ${day}, ${month} ${dateNum}, '${year}`;
+    }
+}
+
+// Update the updateWeatherDisplay function
 async function updateWeatherDisplay(data) {
     try {
-        const mongoliaTime = getMongoliaTime();
+        // Get location time
+        const locationTime = data.sys.country === 'MN' ? 
+            getMongoliaTime() : 
+            getLocationTime(data.timezone);
         
-        // Format time string
-        const timeString = mongoliaTime.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        });
-        
-        // Format date string
-        const dateString = mongoliaTime.toLocaleDateString('en-US', {
-            weekday: 'short',
-            day: 'numeric',
-            month: 'short',
-            year: '2-digit'
-        });
+        // Format date and time using the new function
+        const formattedDateTime = formatDateTime(locationTime, state.language);
+        document.querySelector('.datetime').textContent = formattedDateTime;
 
-        // Update time display
-        document.querySelector('.datetime').textContent = `${timeString} - ${dateString}`;
-        
         // Rest of your updateWeatherDisplay code...
         const tempCelsius = Math.round(data.main.temp);
         const temp = state.isCelsius ? 
@@ -335,31 +488,34 @@ async function updateWeatherDisplay(data) {
         document.querySelector('.temperature').textContent = `${temp}°${state.isCelsius ? 'C' : 'F'}`;
         document.querySelector('.location').textContent = `${data.name}, ${data.sys.country}`;
         
-        // Update weather icon using Mongolia time
+        // Update weather icon
         const weatherIcon = document.querySelector('.weather-icon');
         if (weatherIcon) {
             weatherIcon.innerHTML = `
                 <span class="material-symbols-outlined">
-                    ${getWeatherIcon(data.weather[0].id, mongoliaTime.getHours())}
+                    ${getWeatherIcon(data.weather[0].id, locationTime.getHours())}
                 </span>
             `;
         }
 
-        // Update weather stats
+        // Update weather stats with translations
         const windSpeed = Math.round(data.wind.speed);
         const humidity = data.main.humidity;
         
         const statsHTML = `
             <div class="stat">
                 <span class="material-symbols-outlined">air</span>
-                <span>${windSpeed} M/s</span>
+                <span>${windSpeed} ${translations[state.language].windSpeed}</span>
             </div>
             <div class="stat">
                 <span class="material-symbols-outlined">humidity_percentage</span>
-                <span>${humidity}%</span>
+                <span>${humidity}% ${translations[state.language].humidity}</span>
             </div>
         `;
         document.querySelector('.weather-stats').innerHTML = statsHTML;
+
+        // Update forecast after main display is updated
+        await updateForecast(data.name);
 
     } catch (error) {
         console.error('Error updating weather display:', error);
@@ -465,6 +621,35 @@ function initializeControls() {
             settingsModal.classList.remove('active');
         }
     });
+
+    // Language controls
+    const langEn = document.getElementById('lang-en');
+    const langMn = document.getElementById('lang-mn');
+
+    langEn.addEventListener('click', () => {
+        if (state.language !== 'en') {
+            langEn.classList.add('active');
+            langMn.classList.remove('active');
+            switchLanguage('en');
+        }
+    });
+
+    langMn.addEventListener('click', () => {
+        if (state.language !== 'mn') {
+            langMn.classList.add('active');
+            langEn.classList.remove('active');
+            switchLanguage('mn');
+        }
+    });
+
+    // Set initial language state
+    if (state.language === 'mn') {
+        langMn.classList.add('active');
+        langEn.classList.remove('active');
+    }
+
+    // Initial language setup
+    updateUILanguage();
 }
 
 // Apply theme function
@@ -478,9 +663,171 @@ function applyTheme(isDark) {
 
 // Update initialization
 document.addEventListener('DOMContentLoaded', () => {
-    initializeControls();
-    getUlaanbaatarWeather(); // Start Ulaanbaatar weather
+    // First load everything immediately
+    loadInitialWeather();
     
-    // Update 5 minutes
-    setInterval(getUlaanbaatarWeather, 300000);
+    // Then set up the controls and event listeners
+    initializeControls();
+    setupLanguageControls();
 });
+
+// Add this new function for initial weather load
+async function loadInitialWeather() {
+    try {
+        // Get Ulaanbaatar weather
+        const response = await fetch(
+            `${API_ENDPOINTS.weather}?q=Ulaanbaatar&appid=${API_KEY}&units=metric`
+        );
+        
+        if (!response.ok) throw new Error('Weather data not available');
+        
+        const weatherData = await response.json();
+        
+        // Update weather display which will also trigger forecast update
+        await updateWeatherDisplay(weatherData);
+        
+        // Force forecast update immediately
+        await updateForecast('Ulaanbaatar');
+        
+    } catch (error) {
+        console.error('Error loading initial weather:', error);
+    }
+}
+
+// Update the updateForecast function to ensure it always runs
+async function updateForecast(city) {
+    try {
+        console.log('Updating forecast for:', city); // Debug log
+        
+        const response = await fetch(
+            `${API_ENDPOINTS.forecast}?q=${city}&appid=${API_KEY}&units=metric`
+        );
+        
+        if (!response.ok) throw new Error('Forecast data not available');
+        
+        const data = await response.json();
+        console.log('Forecast data received:', data); // Debug log
+        
+        // Process forecast data
+        const dailyForecasts = {};
+        
+        data.list.forEach(forecast => {
+            const date = new Date(forecast.dt * 1000);
+            const dateKey = date.toDateString();
+            
+            if (!dailyForecasts[dateKey] || 
+                Math.abs(date.getHours() - 12) < Math.abs(new Date(dailyForecasts[dateKey].dt * 1000).getHours() - 12)) {
+                dailyForecasts[dateKey] = forecast;
+            }
+        });
+
+        const weekForecast = Object.values(dailyForecasts).slice(0, 7);
+        
+        // Generate forecast HTML
+        const forecastHTML = weekForecast.map(forecast => {
+            const date = new Date(forecast.dt * 1000);
+            const day = getLocalizedDay(date);
+            const month = getLocalizedMonth(date);
+            const dateNum = date.getDate();
+            
+            const tempCelsius = Math.round(forecast.main.temp);
+            const temp = state.isCelsius ? 
+                tempCelsius : 
+                Math.round((tempCelsius * 9/5) + 32);
+            
+            return `
+                <div class="forecast-day">
+                    <div class="forecast-icon">
+                        <span class="material-symbols-outlined">
+                            ${getWeatherIcon(forecast.weather[0].id, date.getHours())}
+                        </span>
+                    </div>
+                    <div class="forecast-info">
+                        <span class="day">${day}</span>
+                        <span class="date">${dateNum} ${month}</span>
+                    </div>
+                    <div class="forecast-temp">${temp}°${state.isCelsius ? 'C' : 'F'}</div>
+                </div>
+            `;
+        }).join('');
+
+        // Update the forecast container
+        const forecastElement = document.querySelector('.forecast');
+        if (forecastElement) {
+            forecastElement.innerHTML = `
+                <h3>${translations[state.language].forecast}</h3>
+                <div class="forecast-container">
+                    ${forecastHTML}
+                </div>
+            `;
+            console.log('Forecast HTML updated'); // Debug log
+        } else {
+            console.error('Forecast element not found'); // Debug log
+        }
+
+    } catch (error) {
+        console.error('Error updating forecast:', error);
+    }
+}
+
+// Add this function to set up language controls
+function setupLanguageControls() {
+    const langEn = document.getElementById('lang-en');
+    const langMn = document.getElementById('lang-mn');
+    
+    if (langEn && langMn) {
+        // Set initial language state
+        const currentLang = localStorage.getItem('language') || 'en';
+        if (currentLang === 'mn') {
+            langMn.classList.add('active');
+            langEn.classList.remove('active');
+            state.language = 'mn';
+        }
+
+        // Add click handlers
+        langEn.addEventListener('click', () => {
+            if (state.language !== 'en') {
+                langEn.classList.add('active');
+                langMn.classList.remove('active');
+                switchLanguage('en');
+            }
+        });
+
+        langMn.addEventListener('click', () => {
+            if (state.language !== 'mn') {
+                langMn.classList.add('active');
+                langEn.classList.remove('active');
+                switchLanguage('mn');
+            }
+        });
+    }
+}
+
+// Update switchLanguage function
+function switchLanguage(lang) {
+    state.language = lang;
+    localStorage.setItem('language', lang);
+    
+    // Update UI elements with new language
+    document.getElementById('search-input').placeholder = translations[lang].searchPlaceholder;
+    document.querySelector('.settings-modal h3').textContent = translations[lang].settings;
+    
+    // Refresh weather data to update translations
+    const cityName = document.querySelector('.location').textContent.split(',')[0];
+    refreshWeatherData(cityName);
+}
+
+// Update refreshWeatherData function
+async function refreshWeatherData(cityName) {
+    try {
+        const response = await fetch(
+            `${API_ENDPOINTS.weather}?q=${cityName}&appid=${API_KEY}&units=metric`
+        );
+        if (response.ok) {
+            const weatherData = await response.json();
+            await updateWeatherDisplay(weatherData);
+        }
+    } catch (error) {
+        console.error('Error refreshing weather data:', error);
+    }
+}
