@@ -691,6 +691,8 @@ body::before {
     transition: all 0.3s ease;
     font-weight: 600;
     backdrop-filter: blur(10px);
+    min-width: 45px;
+    text-align: center;
 }
 
 .lang-btn.active {
@@ -703,11 +705,29 @@ body::before {
     .language-controls {
         top: 10px;
         left: 10px;
+        gap: 6px;
     }
     
     .lang-btn {
         padding: 6px 12px;
-        font-size: 14px;
+        font-size: 13px;
+        min-width: 40px;
+    }
+}
+
+/* Small Mobile Styles */
+@media screen and (max-width: 375px) {
+    .language-controls {
+        top: 8px;
+        left: 8px;
+        gap: 4px;
+    }
+    
+    .lang-btn {
+        padding: 5px 10px;
+        font-size: 12px;
+        min-width: 35px;
+        border-radius: 15px;
     }
 }
 
@@ -720,18 +740,13 @@ footer {
     font-size: 14px;
     z-index: 1000;
     opacity: 0.8;
-    backdrop-filter: blur(10px);
-    padding: 8px 12px;
-    border-radius: 8px;
-    background: var(--panel-bg);
 }
 
-/* Add to your existing media queries for mobile responsiveness */
+/* Update mobile responsive styles for footer */
 @media screen and (max-width: 768px) {
     footer {
         bottom: 15px;
         right: 15px;
         font-size: 12px;
-        padding: 6px 10px;
     }
 }
