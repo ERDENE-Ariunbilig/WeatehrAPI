@@ -42,6 +42,26 @@ body {
     position: relative;
 }
 
+/* Add a pseudo-element for smooth transitions */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transition: opacity 1.5s ease-in-out;
+    z-index: 0;
+    pointer-events: none;
+}
+
+body.transitioning::after {
+    opacity: 1;
+}
+
 /* Background overlay */
 body::before {
     content: '';
@@ -50,8 +70,12 @@ body::before {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.3);
+    background: linear-gradient(
+        rgba(0, 0, 0, 0.2),
+        rgba(0, 0, 0, 0.3)
+    );
     z-index: 1;
+    pointer-events: none;
 }
 
 /* Container */
@@ -684,5 +708,30 @@ body::before {
     .lang-btn {
         padding: 6px 12px;
         font-size: 14px;
+    }
+}
+
+/* Add at the end of the file */
+footer {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    color: var(--text-color);
+    font-size: 14px;
+    z-index: 1000;
+    opacity: 0.8;
+    backdrop-filter: blur(10px);
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--panel-bg);
+}
+
+/* Add to your existing media queries for mobile responsiveness */
+@media screen and (max-width: 768px) {
+    footer {
+        bottom: 15px;
+        right: 15px;
+        font-size: 12px;
+        padding: 6px 10px;
     }
 }
