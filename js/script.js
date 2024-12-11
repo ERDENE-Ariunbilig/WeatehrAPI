@@ -5,8 +5,6 @@ const API_ENDPOINTS = {
     weather: `${BASE_URL}/weather`,
     forecast: `${BASE_URL}/forecast`
 };
-
-// Update translations object
 const translations = {
     en: {
         searchPlaceholder: "Search Location...",
@@ -22,8 +20,13 @@ const translations = {
             Sep: 'Sep', Oct: 'Oct', Nov: 'Nov', Dec: 'Dec'
         },
         days: {
-            Mon: 'Mon', Tue: 'Tue', Wed: 'Wed', Thu: 'Thu',
-            Fri: 'Fri', Sat: 'Sat', Sun: 'Sun'
+            'Monday': 'Mon',
+            'Tue': 'Tue',
+            'Wed': 'Wed',
+            'Thu': 'Thu',
+            'Fri': 'Fri',
+            'Sat': 'Sat',
+            'Sun': 'Sun'
         }
     },
     mn: {
@@ -40,13 +43,13 @@ const translations = {
             Sep: '9-р сар', Oct: '10-р сар', Nov: '11-р сар', Dec: '12-р сар'
         },
         days: {
-            Monday: 'Даваа',
-            Tuesday: 'Мягмар',
-            Wednesday: 'Лхагва',
-            Thursday: 'Пүрэв',
-            Friday: 'Баасан',
-            Saturday: 'Бямба',
-            Sunday: 'Ням'
+            'Mon': 'Даваа',
+            'Tue': 'Мягмар',
+            'Wed': 'Лхагва',
+            'Thu': 'Пүрэв',
+            'Fri': 'Баасан',
+            'Sat': 'Бямба',
+            'Sun': 'Ням'
         }
     }
 };
@@ -119,8 +122,11 @@ const state = {
 
 // Function to get localized day name
 function getLocalizedDay(date) {
-    const englishDay = date.toLocaleDateString('en-US', { weekday: 'long' });
-    return translations[state.language].days[englishDay];
+    // Get the day name in English first
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+    
+    // Return the translated day name from our translations object
+    return translations[state.language].days[dayName] || dayName;
 }
 
 // Function to get localized month name
@@ -663,6 +669,7 @@ function applyTheme(isDark) {
 
 // Update initialization
 document.addEventListener('DOMContentLoaded', () => {
+    preloadBackgroundImages();
     // First load everything immediately
     loadInitialWeather();
     
@@ -830,4 +837,29 @@ async function refreshWeatherData(cityName) {
     } catch (error) {
         console.error('Error refreshing weather data:', error);
     }
+}
+
+// Add this function
+function preloadBackgroundImages() {
+    const preloadImage = (url) => {
+        const img = new Image();
+        img.src = url;
+    };
+
+    // Preload all possible backgrounds
+    Object.values(backgroundConfig).forEach(config => {
+        if (typeof config === 'object') {
+            if (config.summer || config.winter) {
+                // Handle seasonal configurations
+                ['summer', 'winter'].forEach(season => {
+                    if (config[season]) {
+                        Object.values(config[season]).forEach(preloadImage);
+                    }
+                });
+            } else {
+                // Handle default configuration
+                Object.values(config).forEach(preloadImage);
+            }
+        }
+    });
 }
